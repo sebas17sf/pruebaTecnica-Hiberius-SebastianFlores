@@ -1,0 +1,26 @@
+version: '3.9'
+
+services:
+  banking-service:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: banking-service
+    ports:
+      - "8080:8080"
+    environment:
+      SPRING_PROFILES_ACTIVE: docker
+      JAVA_OPTS: "-Xmx512m -Xms256m"
+    healthcheck:
+      test: [ "CMD", "curl", "-f", "http://localhost:8080/actuator/health" ]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+    networks:
+      - banking-network
+    restart: unless-stopped
+
+networks:
+  banking-network:
+    driver: bridge

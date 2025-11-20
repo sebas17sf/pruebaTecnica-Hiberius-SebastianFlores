@@ -1,0 +1,170 @@
+openapi: 3.0.3
+info:
+  title: Payment Initiation - Payment Order API
+  version: 1.0.0
+  description: >
+    REST API for Payment Initiation aligned to BIAN (PaymentOrder).  
+    Migrated from legacy SOAP service defined in WSDL.
+
+servers:
+  - url: http://localhost:8080
+
+paths:
+
+  /payment-initiation/payment-orders:
+    post:
+      summary: Initiate a Payment Order
+      operationId: initiatePaymentOrder
+      tags:
+        - PaymentOrder
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PaymentOrderInitiationRequest'
+      responses:
+        '201':
+          description: Payment order successfully created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaymentOrderInitiationResponse'
+        '400':
+          description: Invalid input data
+        '500':
+          description: Internal server error
+
+  /payment-initiation/payment-orders/{paymentOrderId}:
+    get:
+      summary: Retrieve Payment Order
+      operationId: retrievePaymentOrder
+      tags:
+        - PaymentOrder
+      parameters:
+        - name: paymentOrderId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Payment order retrieved
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaymentOrder'
+        '404':
+          description: Payment order not found
+
+  /payment-initiation/payment-orders/{paymentOrderId}/status:
+    get:
+      summary: Retrieve Payment Order Status
+      operationId: retrievePaymentOrderStatus
+      tags:
+        - PaymentOrder
+      parameters:
+        - name: paymentOrderId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Status of the payment order
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaymentOrderStatusResponse'
+        '404':
+          description: Payment order not found
+
+components:
+  schemas:
+
+    PaymentOrderInitiationRequest:
+      type: object
+      required:
+        - externalId
+        - debtorIban
+        - creditorIban
+        - amount
+        - currency
+        - requestedExecutionDate
+      properties:
+        externalId:
+          type: string
+        debtorIban:
+          type: string
+        creditorIban:
+          type: string
+        amount:
+          type: number
+          format: decimal
+        currency:
+          type: string
+          description: ISO 4217 currency code
+        remittanceInfo:
+          type: string
+          nullable: true
+        requestedExecutionDate:
+          type: string
+          format: date
+
+    PaymentOrderInitiationResponse:
+      type: object
+      properties:
+        paymentOrderId:
+          type: string
+        status:
+          type: string
+          enum:
+            - INITIATED
+            - VALIDATED
+            - PENDING
+            - EXECUTED
+            - REJECTED
+
+    PaymentOrder:
+      type: object
+      properties:
+        paymentOrderId:
+          type: string
+        externalId:
+          type: string
+        debtorIban:
+          type: string
+        creditorIban:
+          type: string
+        amount:
+          type: number
+        currency:
+          type: string
+        remittanceInfo:
+          type: string
+          nullable: true
+        requestedExecutionDate:
+          type: string
+          format: date
+        status:
+          type: string
+        lastUpdate:
+          type: string
+          format: date-time
+
+    PaymentOrderStatusResponse:
+      type: object
+      properties:
+        paymentOrderId:
+          type: string
+        status:
+          type: string
+          enum:
+            - INITIATED
+            - VALIDATED
+            - PENDING
+            - EXECUTED
+            - REJECTED
+        lastUpdate:
+          type: string
+          format: date-time

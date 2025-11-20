@@ -1,0 +1,9 @@
+.openapi-generator-ignore
+README.md
+pom.xml
+src/main/java/org/openapitools/api/ApiUtil.java
+src/main/java/org/openapitools/api/PaymentInitiationApi.java
+src/main/java/org/openapitools/model/PaymentOrder.java
+src/main/java/org/openapitools/model/PaymentOrderInitiationRequest.java
+src/main/java/org/openapitools/model/PaymentOrderInitiationResponse.java
+src/main/java/org/openapitools/model/PaymentOrderStatusResponse.java

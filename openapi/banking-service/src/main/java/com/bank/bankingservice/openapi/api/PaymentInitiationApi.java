@@ -1,0 +1,167 @@
+package com.bank.bankingservice.openapi.api;
+
+import com.bank.bankingservice.openapi.model.PaymentOrder;
+import com.bank.bankingservice.openapi.model.PaymentOrderInitiationRequest;
+import com.bank.bankingservice.openapi.model.PaymentOrderInitiationResponse;
+import com.bank.bankingservice.openapi.model.PaymentOrderStatusResponse;
+
+import io.swagger.v3.oas.annotations.ExternalDocumentation;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
+import io.swagger.v3.oas.annotations.Parameters;
+import io.swagger.v3.oas.annotations.media.ArraySchema;
+import io.swagger.v3.oas.annotations.media.Content;
+import io.swagger.v3.oas.annotations.media.Schema;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.security.SecurityRequirement;
+import io.swagger.v3.oas.annotations.tags.Tag;
+import io.swagger.v3.oas.annotations.enums.ParameterIn;
+import io.swagger.v3.oas.annotations.media.ExampleObject;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
+import org.springframework.validation.annotation.Validated;
+import org.springframework.web.bind.annotation.*;
+import org.springframework.web.context.request.NativeWebRequest;
+import org.springframework.web.multipart.MultipartFile;
+
+import jakarta.validation.Valid;
+import jakarta.validation.constraints.*;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
+
+@Validated
+@Tag(name = "PaymentOrder", description = "the PaymentOrder API")
+public interface PaymentInitiationApi {
+
+    default Optional<NativeWebRequest> getRequest() {
+        return Optional.empty();
+    }
+
+    String PATH_INITIATE_PAYMENT_ORDER = "/payment-initiation/payment-orders";
+    /**
+     * POST /payment-initiation/payment-orders : Initiate a Payment Order
+     *
+     * @param paymentOrderInitiationRequest  (required)
+     * @return Payment order successfully created (status code 201)
+     *         or Invalid input data (status code 400)
+     *         or Internal server error (status code 500)
+     */
+    @Operation(
+        operationId = "initiatePaymentOrder",
+        summary = "Initiate a Payment Order",
+        tags = { "PaymentOrder" },
+        responses = {
+            @ApiResponse(responseCode = "201", description = "Payment order successfully created", content = {
+                @Content(mediaType = "application/json", schema = @Schema(implementation = PaymentOrderInitiationResponse.class))
+            }),
+            @ApiResponse(responseCode = "400", description = "Invalid input data"),
+            @ApiResponse(responseCode = "500", description = "Internal server error")
+        }
+    )
+    @RequestMapping(
+        method = RequestMethod.POST,
+        value = PaymentInitiationApi.PATH_INITIATE_PAYMENT_ORDER,
+        produces = { "application/json" },
+        consumes = { "application/json" }
+    )
+    default ResponseEntity<PaymentOrderInitiationResponse> initiatePaymentOrder(
+        @Parameter(name = "paymentOrderInitiationRequest", description = "", required = true) @Valid @RequestBody PaymentOrderInitiationRequest paymentOrderInitiationRequest
+    ) {
+        getRequest().ifPresent(request -> {
+            for (MediaType mediaType: MediaType.parseMediaTypes(request.getHeader("Accept"))) {
+                if (mediaType.isCompatibleWith(MediaType.valueOf("application/json"))) {
+                    String exampleString = "{ \"paymentOrderId\" : \"paymentOrderId\", \"status\" : \"INITIATED\" }";
+                    ApiUtil.setExampleResponse(request, "application/json", exampleString);
+                    break;
+                }
+            }
+        });
+        return new ResponseEntity<>(HttpStatus.NOT_IMPLEMENTED);
+
+    }
+
+
+    String PATH_RETRIEVE_PAYMENT_ORDER = "/payment-initiation/payment-orders/{paymentOrderId}";
+    /**
+     * GET /payment-initiation/payment-orders/{paymentOrderId} : Retrieve Payment Order
+     *
+     * @param paymentOrderId  (required)
+     * @return Payment order retrieved (status code 200)
+     *         or Payment order not found (status code 404)
+     */
+    @Operation(
+        operationId = "retrievePaymentOrder",
+        summary = "Retrieve Payment Order",
+        tags = { "PaymentOrder" },
+        responses = {
+            @ApiResponse(responseCode = "200", description = "Payment order retrieved", content = {
+                @Content(mediaType = "application/json", schema = @Schema(implementation = PaymentOrder.class))
+            }),
+            @ApiResponse(responseCode = "404", description = "Payment order not found")
+        }
+    )
+    @RequestMapping(
+        method = RequestMethod.GET,
+        value = PaymentInitiationApi.PATH_RETRIEVE_PAYMENT_ORDER,
+        produces = { "application/json" }
+    )
+    default ResponseEntity<PaymentOrder> retrievePaymentOrder(
+        @NotNull @Parameter(name = "paymentOrderId", description = "", required = true, in = ParameterIn.PATH) @PathVariable("paymentOrderId") String paymentOrderId
+    ) {
+        getRequest().ifPresent(request -> {
+            for (MediaType mediaType: MediaType.parseMediaTypes(request.getHeader("Accept"))) {
+                if (mediaType.isCompatibleWith(MediaType.valueOf("application/json"))) {
+                    String exampleString = "{ \"creditorIban\" : \"creditorIban\", \"amount\" : 0.8008281904610115, \"requestedExecutionDate\" : \"2000-01-23\", \"debtorIban\" : \"debtorIban\", \"paymentOrderId\" : \"paymentOrderId\", \"lastUpdate\" : \"2000-01-23T04:56:07.000+00:00\", \"externalId\" : \"externalId\", \"currency\" : \"currency\", \"remittanceInfo\" : \"remittanceInfo\", \"status\" : \"status\" }";
+                    ApiUtil.setExampleResponse(request, "application/json", exampleString);
+                    break;
+                }
+            }
+        });
+        return new ResponseEntity<>(HttpStatus.NOT_IMPLEMENTED);
+
+    }
+
+
+    String PATH_RETRIEVE_PAYMENT_ORDER_STATUS = "/payment-initiation/payment-orders/{paymentOrderId}/status";
+    /**
+     * GET /payment-initiation/payment-orders/{paymentOrderId}/status : Retrieve Payment Order Status
+     *
+     * @param paymentOrderId  (required)
+     * @return Status of the payment order (status code 200)
+     *         or Payment order not found (status code 404)
+     */
+    @Operation(
+        operationId = "retrievePaymentOrderStatus",
+        summary = "Retrieve Payment Order Status",
+        tags = { "PaymentOrder" },
+        responses = {
+            @ApiResponse(responseCode = "200", description = "Status of the payment order", content = {
+                @Content(mediaType = "application/json", schema = @Schema(implementation = PaymentOrderStatusResponse.class))
+            }),
+            @ApiResponse(responseCode = "404", description = "Payment order not found")
+        }
+    )
+    @RequestMapping(
+        method = RequestMethod.GET,
+        value = PaymentInitiationApi.PATH_RETRIEVE_PAYMENT_ORDER_STATUS,
+        produces = { "application/json" }
+    )
+    default ResponseEntity<PaymentOrderStatusResponse> retrievePaymentOrderStatus(
+        @NotNull @Parameter(name = "paymentOrderId", description = "", required = true, in = ParameterIn.PATH) @PathVariable("paymentOrderId") String paymentOrderId
+    ) {
+        getRequest().ifPresent(request -> {
+            for (MediaType mediaType: MediaType.parseMediaTypes(request.getHeader("Accept"))) {
+                if (mediaType.isCompatibleWith(MediaType.valueOf("application/json"))) {
+                    String exampleString = "{ \"paymentOrderId\" : \"paymentOrderId\", \"lastUpdate\" : \"2000-01-23T04:56:07.000+00:00\", \"status\" : \"INITIATED\" }";
+                    ApiUtil.setExampleResponse(request, "application/json", exampleString);
+                    break;
+                }
+            }
+        });
+        return new ResponseEntity<>(HttpStatus.NOT_IMPLEMENTED);
+
+    }
+
+}

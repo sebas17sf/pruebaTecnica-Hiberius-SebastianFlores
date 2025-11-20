@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<FindBugsFilter>
+  <!-- SpotBugs Configuration for Banking Service -->
+  <!-- Version: 4.8.2 -->
+
+  <!-- ============================================== -->
+  <!-- EXCLUDE GENERATED CODE                        -->
+  <!-- ============================================== -->
+  <Match>
+    <Class name="~com.bank.bankingservice.openapi.*"/>
+  </Match>
+
+  <!-- ============================================== -->
+  <!-- MAPPER CLASS (Complex domain transforms)      -->
+  <!-- ============================================== -->
+  <Match>
+    <Class name="com.bank.bankingservice.application.mapper.PaymentOrderMapper"/>
+    <Bug pattern="NP_NULL_ON_SOME_PATH"/>
+  </Match>
+
+  <!-- ============================================== -->
+  <!-- TEST CLASSES (Experimental assertions)        -->
+  <!-- ============================================== -->
+  <Match>
+    <Class name="~.*Test$"/>
+    <Bug pattern="NP_NONNULL_FIELD_IS_ALWAYS_NULL_IN_COMPARATOR"/>
+  </Match>
+
+</FindBugsFilter>

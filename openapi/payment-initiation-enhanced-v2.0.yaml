@@ -1,0 +1,833 @@
+openapi: 3.0.3
+
+info:
+  title: Payment Initiation - Payment Order API
+  version: 2.0.0
+  description: >
+    REST API for Payment Initiation Service Domain aligned to BIAN (Business Information Analysis and Reporting).
+    
+    This API implements the Payment Initiation Service Domain with PaymentOrder Business Qualifier (BQ),
+    following BIAN standard patterns for banking operations.
+    
+    Service Domain: Payment Initiation
+    Business Qualifier: PaymentOrder
+    
+  contact:
+    name: Banking Service Team
+    url: https://example.com/support
+    email: api-support@bank.example.com
+  
+  license:
+    name: Apache 2.0
+    url: https://www.apache.org/licenses/LICENSE-2.0.html
+  
+  x-bian-servicedomaininfo:
+    serviceDomain: "Payment Initiation"
+    businessQualifier: "PaymentOrder"
+    bqVersion: "1.0.0"
+    bqProvider: "Banking Organization"
+
+servers:
+  - url: http://localhost:8080
+    description: Development Server
+  - url: https://api.bank.example.com/v2
+    description: Production Server
+
+tags:
+  - name: PaymentOrder
+    description: Payment Order Business Qualifier operations
+    externalDocs:
+      url: https://bian.org/payment-initiation
+  - name: PaymentOrderStatus
+    description: Payment Order Status queries
+
+paths:
+
+  /payment-initiation/payment-orders:
+    
+    post:
+      operationId: initiatePaymentOrder
+      tags:
+        - PaymentOrder
+      summary: Initiate a new Payment Order
+      description: |
+        Initiates a new payment order with the provided payment details.
+        
+        This operation corresponds to the BIAN Create Pattern for the PaymentOrder Business Qualifier.
+        
+        **Business Rules**:
+        - All required fields must be provided
+        - Debtor and creditor IBANs must be valid
+        - Amount must be positive and non-zero
+        - Execution date must be in the future
+        - Currency must be ISO 4217 compliant
+        
+        **State Transition**: ∅ → INITIATED
+      
+      requestBody:
+        required: true
+        description: Payment Order Initiation Request
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PaymentOrderInitiationRequest'
+            examples:
+              valid:
+                summary: Valid payment order example
+                value:
+                  externalId: "ORD-2025-001234"
+                  debtorIban: "ES9121540011270123456789"
+                  creditorIban: "FR1420041010050500013M02606"
+                  amount: 1500.50
+                  currency: "EUR"
+                  requestedExecutionDate: "2025-11-25"
+                  remittanceInfo: "Invoice #INV-2025-0567"
+      
+      responses:
+        '201':
+          description: Payment Order successfully initiated
+          headers:
+            Location:
+              schema:
+                type: string
+              description: URL of the created Payment Order
+            X-Request-ID:
+              schema:
+                type: string
+              description: Unique request identifier for tracking
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaymentOrderInitiationResponse'
+              examples:
+                success:
+                  value:
+                    paymentOrderId: "PO-2025-000001"
+                    status: "INITIATED"
+                    createdAt: "2025-11-19T10:30:00Z"
+        
+        '400':
+          description: Invalid input data
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              examples:
+                invalidIban:
+                  value:
+                    code: "INVALID_IBAN"
+                    message: "Debtor IBAN is invalid"
+                    timestamp: "2025-11-19T10:30:00Z"
+        
+        '422':
+          description: Unprocessable Entity - Business rule violation
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              examples:
+                pastDate:
+                  value:
+                    code: "INVALID_EXECUTION_DATE"
+                    message: "Execution date cannot be in the past"
+                    timestamp: "2025-11-19T10:30:00Z"
+        
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+      
+      security:
+        - bearerAuth: []
+    
+    get:
+      operationId: listPaymentOrders
+      tags:
+        - PaymentOrder
+      summary: List Payment Orders with filtering and pagination
+      description: |
+        Retrieves a list of payment orders with optional filtering and pagination.
+        
+        This operation implements the BIAN Retrieve Pattern with search capability.
+      
+      parameters:
+        - name: status
+          in: query
+          description: Filter by payment order status
+          schema:
+            type: string
+            enum:
+              - INITIATED
+              - VALIDATED
+              - PENDING
+              - EXECUTED
+              - REJECTED
+          example: "PENDING"
+        
+        - name: debtorIban
+          in: query
+          description: Filter by debtor IBAN
+          schema:
+            type: string
+            example: "ES9121540011270123456789"
+        
+        - name: creditorIban
+          in: query
+          description: Filter by creditor IBAN
+          schema:
+            type: string
+            example: "FR1420041010050500013M02606"
+        
+        - name: dateFrom
+          in: query
+          description: Filter by execution date (from)
+          schema:
+            type: string
+            format: date
+            example: "2025-11-01"
+        
+        - name: dateTo
+          in: query
+          description: Filter by execution date (to)
+          schema:
+            type: string
+            format: date
+            example: "2025-11-30"
+        
+        - name: limit
+          in: query
+          description: Maximum number of records (default 20, max 100)
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 100
+            default: 20
+        
+        - name: offset
+          in: query
+          description: Number of records to skip (pagination)
+          schema:
+            type: integer
+            minimum: 0
+            default: 0
+      
+      responses:
+        '200':
+          description: List of payment orders
+          headers:
+            X-Total-Count:
+              schema:
+                type: integer
+              description: Total number of records
+            X-Page-Count:
+              schema:
+                type: integer
+              description: Total number of pages
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/PaymentOrder'
+        
+        '400':
+          description: Invalid query parameters
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+      
+      security:
+        - bearerAuth: []
+
+  /payment-initiation/payment-orders/{paymentOrderId}:
+    
+    get:
+      operationId: retrievePaymentOrder
+      tags:
+        - PaymentOrder
+      summary: Retrieve Payment Order details
+      description: |
+        Retrieves the complete details of a specific payment order.
+        
+        This operation implements the BIAN Retrieve Pattern for the PaymentOrder Business Qualifier.
+      
+      parameters:
+        - name: paymentOrderId
+          in: path
+          required: true
+          description: Unique identifier of the Payment Order
+          schema:
+            type: string
+            pattern: "^PO-[0-9]{4}-[0-9]{6}$"
+            example: "PO-2025-000001"
+      
+      responses:
+        '200':
+          description: Payment Order retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaymentOrder'
+              examples:
+                success:
+                  value:
+                    paymentOrderId: "PO-2025-000001"
+                    externalId: "ORD-2025-001234"
+                    debtorIban: "ES9121540011270123456789"
+                    creditorIban: "FR1420041010050500013M02606"
+                    amount: 1500.50
+                    currency: "EUR"
+                    remittanceInfo: "Invoice #INV-2025-0567"
+                    requestedExecutionDate: "2025-11-25"
+                    status: "PENDING"
+                    lastUpdate: "2025-11-19T10:30:00Z"
+        
+        '404':
+          description: Payment Order not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              examples:
+                notFound:
+                  value:
+                    code: "PAYMENT_ORDER_NOT_FOUND"
+                    message: "Payment order PO-2025-000001 not found"
+                    timestamp: "2025-11-19T10:30:00Z"
+        
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+      
+      security:
+        - bearerAuth: []
+    
+    patch:
+      operationId: updatePaymentOrder
+      tags:
+        - PaymentOrder
+      summary: Update Payment Order
+      description: |
+        Updates specific fields of a payment order.
+        
+        This operation implements the BIAN Update Pattern for the PaymentOrder Business Qualifier.
+        
+        **Business Rules**:
+        - Only INITIATED orders can be updated
+        - Immutable fields: paymentOrderId, externalId, status, createdAt
+        - Debtor and creditor IBANs cannot be changed
+        - Amount cannot be changed
+        - Execution date can be changed if new date is in the future
+      
+      parameters:
+        - name: paymentOrderId
+          in: path
+          required: true
+          description: Unique identifier of the Payment Order
+          schema:
+            type: string
+            pattern: "^PO-[0-9]{4}-[0-9]{6}$"
+            example: "PO-2025-000001"
+      
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PaymentOrderUpdateRequest'
+      
+      responses:
+        '200':
+          description: Payment Order updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaymentOrder'
+        
+        '400':
+          description: Invalid input data
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        
+        '404':
+          description: Payment Order not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        
+        '409':
+          description: Cannot update Payment Order in current state
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              examples:
+                wrongState:
+                  value:
+                    code: "INVALID_STATE_TRANSITION"
+                    message: "Cannot update payment order in EXECUTED state"
+                    timestamp: "2025-11-19T10:30:00Z"
+        
+        '422':
+          description: Unprocessable Entity - Business rule violation
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+      
+      security:
+        - bearerAuth: []
+
+  /payment-initiation/payment-orders/{paymentOrderId}/status:
+    
+    get:
+      operationId: retrievePaymentOrderStatus
+      tags:
+        - PaymentOrderStatus
+      summary: Retrieve Payment Order Status
+      description: |
+        Retrieves the current status of a payment order and related state information.
+        
+        This operation implements the BIAN Status Pattern for PaymentOrder.
+      
+      parameters:
+        - name: paymentOrderId
+          in: path
+          required: true
+          description: Unique identifier of the Payment Order
+          schema:
+            type: string
+            pattern: "^PO-[0-9]{4}-[0-9]{6}$"
+            example: "PO-2025-000001"
+      
+      responses:
+        '200':
+          description: Payment Order Status retrieved
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaymentOrderStatusResponse'
+              examples:
+                pending:
+                  value:
+                    paymentOrderId: "PO-2025-000001"
+                    status: "PENDING"
+                    lastUpdate: "2025-11-19T10:30:00Z"
+                    statusReason: "Awaiting validation"
+                executed:
+                  value:
+                    paymentOrderId: "PO-2025-000001"
+                    status: "EXECUTED"
+                    lastUpdate: "2025-11-20T14:15:00Z"
+                    statusReason: "Successfully executed"
+                    executionDate: "2025-11-20"
+        
+        '404':
+          description: Payment Order not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+      
+      security:
+        - bearerAuth: []
+
+  /payment-initiation/payment-orders/{paymentOrderId}/execute:
+    
+    post:
+      operationId: executePaymentOrder
+      tags:
+        - PaymentOrder
+      summary: Execute Payment Order
+      description: |
+        Executes a payment order, transitioning it from PENDING to EXECUTED state.
+        
+        This operation implements the BIAN Execute Pattern for PaymentOrder.
+        
+        **Business Rules**:
+        - Only PENDING orders can be executed
+        - Execution date cannot be in the past
+        - All validations must have passed
+        
+        **State Transition**: PENDING → EXECUTED
+      
+      parameters:
+        - name: paymentOrderId
+          in: path
+          required: true
+          description: Unique identifier of the Payment Order
+          schema:
+            type: string
+            pattern: "^PO-[0-9]{4}-[0-9]{6}$"
+            example: "PO-2025-000001"
+      
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PaymentOrderExecuteRequest'
+      
+      responses:
+        '200':
+          description: Payment Order executed successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaymentOrderStatusResponse'
+              examples:
+                executed:
+                  value:
+                    paymentOrderId: "PO-2025-000001"
+                    status: "EXECUTED"
+                    lastUpdate: "2025-11-20T14:15:00Z"
+                    statusReason: "Successfully executed"
+                    executionDate: "2025-11-20"
+        
+        '400':
+          description: Invalid request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        
+        '404':
+          description: Payment Order not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        
+        '409':
+          description: Cannot execute in current state
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              examples:
+                wrongState:
+                  value:
+                    code: "INVALID_STATE_TRANSITION"
+                    message: "Cannot execute payment order in REJECTED state"
+                    timestamp: "2025-11-19T10:30:00Z"
+        
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+      
+      security:
+        - bearerAuth: []
+
+components:
+
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: JWT Bearer token for API authentication
+
+  schemas:
+
+    PaymentOrderInitiationRequest:
+      type: object
+      required:
+        - externalId
+        - debtorIban
+        - creditorIban
+        - amount
+        - currency
+        - requestedExecutionDate
+      properties:
+        externalId:
+          type: string
+          minLength: 1
+          maxLength: 50
+          description: External reference ID for the payment order
+          example: "ORD-2025-001234"
+        
+        debtorIban:
+          type: string
+          pattern: "^[A-Z]{2}[0-9]{2}[A-Z0-9]{1,30}$"
+          description: IBAN of the debtor (payer)
+          example: "ES9121540011270123456789"
+        
+        creditorIban:
+          type: string
+          pattern: "^[A-Z]{2}[0-9]{2}[A-Z0-9]{1,30}$"
+          description: IBAN of the creditor (beneficiary)
+          example: "FR1420041010050500013M02606"
+        
+        amount:
+          type: number
+          format: decimal
+          minimum: 0.01
+          maximum: 999999999.99
+          description: Amount to be transferred (positive number)
+          example: 1500.50
+        
+        currency:
+          type: string
+          pattern: "^[A-Z]{3}$"
+          minLength: 3
+          maxLength: 3
+          description: ISO 4217 currency code
+          example: "EUR"
+        
+        remittanceInfo:
+          type: string
+          maxLength: 140
+          nullable: true
+          description: Payment reference or remittance information
+          example: "Invoice #INV-2025-0567"
+        
+        requestedExecutionDate:
+          type: string
+          format: date
+          description: Requested date for payment execution (must be in the future)
+          example: "2025-11-25"
+
+    PaymentOrderInitiationResponse:
+      type: object
+      required:
+        - paymentOrderId
+        - status
+        - createdAt
+      properties:
+        paymentOrderId:
+          type: string
+          pattern: "^PO-[0-9]{4}-[0-9]{6}$"
+          description: Unique identifier for the Payment Order
+          example: "PO-2025-000001"
+        
+        status:
+          type: string
+          enum:
+            - INITIATED
+            - VALIDATED
+            - PENDING
+            - EXECUTED
+            - REJECTED
+          description: Current status of the payment order
+          example: "INITIATED"
+        
+        createdAt:
+          type: string
+          format: date-time
+          description: Timestamp when the payment order was created
+          example: "2025-11-19T10:30:00Z"
+
+    PaymentOrderUpdateRequest:
+      type: object
+      properties:
+        remittanceInfo:
+          type: string
+          maxLength: 140
+          nullable: true
+          description: Updated remittance information
+        
+        requestedExecutionDate:
+          type: string
+          format: date
+          description: Updated execution date (must be in the future)
+
+    PaymentOrderExecuteRequest:
+      type: object
+      properties:
+        executionReference:
+          type: string
+          maxLength: 50
+          description: Optional execution reference for audit trail
+
+    PaymentOrder:
+      type: object
+      required:
+        - paymentOrderId
+        - externalId
+        - debtorIban
+        - creditorIban
+        - amount
+        - currency
+        - requestedExecutionDate
+        - status
+        - lastUpdate
+      properties:
+        paymentOrderId:
+          type: string
+          pattern: "^PO-[0-9]{4}-[0-9]{6}$"
+          description: Unique identifier for the Payment Order
+          example: "PO-2025-000001"
+        
+        externalId:
+          type: string
+          description: External reference ID
+          example: "ORD-2025-001234"
+        
+        debtorIban:
+          type: string
+          description: IBAN of the debtor (payer)
+          example: "ES9121540011270123456789"
+        
+        creditorIban:
+          type: string
+          description: IBAN of the creditor (beneficiary)
+          example: "FR1420041010050500013M02606"
+        
+        amount:
+          type: number
+          format: decimal
+          description: Amount to be transferred
+          example: 1500.50
+        
+        currency:
+          type: string
+          description: ISO 4217 currency code
+          example: "EUR"
+        
+        remittanceInfo:
+          type: string
+          nullable: true
+          description: Payment reference or remittance information
+          example: "Invoice #INV-2025-0567"
+        
+        requestedExecutionDate:
+          type: string
+          format: date
+          description: Requested date for payment execution
+          example: "2025-11-25"
+        
+        status:
+          type: string
+          enum:
+            - INITIATED
+            - VALIDATED
+            - PENDING
+            - EXECUTED
+            - REJECTED
+          description: Current status of the payment order
+          example: "PENDING"
+        
+        lastUpdate:
+          type: string
+          format: date-time
+          description: Timestamp of the last update
+          example: "2025-11-19T10:30:00Z"
+
+    PaymentOrderStatusResponse:
+      type: object
+      required:
+        - paymentOrderId
+        - status
+        - lastUpdate
+      properties:
+        paymentOrderId:
+          type: string
+          pattern: "^PO-[0-9]{4}-[0-9]{6}$"
+          description: Unique identifier for the Payment Order
+          example: "PO-2025-000001"
+        
+        status:
+          type: string
+          enum:
+            - INITIATED
+            - VALIDATED
+            - PENDING
+            - EXECUTED
+            - REJECTED
+          description: Current status of the payment order
+          example: "PENDING"
+        
+        lastUpdate:
+          type: string
+          format: date-time
+          description: Timestamp of the last status change
+          example: "2025-11-19T10:30:00Z"
+        
+        statusReason:
+          type: string
+          description: Human-readable explanation of the current status
+          example: "Awaiting validation"
+        
+        executionDate:
+          type: string
+          format: date
+          nullable: true
+          description: Actual execution date (only if EXECUTED)
+          example: "2025-11-20"
+        
+        rejectionReason:
+          type: string
+          nullable: true
+          description: Reason for rejection (only if REJECTED)
+          example: "Insufficient funds"
+
+    ErrorResponse:
+      type: object
+      required:
+        - code
+        - message
+        - timestamp
+      properties:
+        code:
+          type: string
+          description: Error code for programmatic handling
+          example: "INVALID_IBAN"
+        
+        message:
+          type: string
+          description: Human-readable error message
+          example: "Debtor IBAN is invalid"
+        
+        detail:
+          type: string
+          description: Additional error details
+          example: "IBAN must conform to ISO 13616 standard"
+        
+        timestamp:
+          type: string
+          format: date-time
+          description: Timestamp when the error occurred
+          example: "2025-11-19T10:30:00Z"
+        
+        path:
+          type: string
+          description: API path where the error occurred
+          example: "/payment-initiation/payment-orders"
+        
+        requestId:
+          type: string
+          description: Unique request ID for tracing
+          example: "req-2025-001234"
