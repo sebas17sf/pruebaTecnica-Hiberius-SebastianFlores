@@ -482,30 +482,6 @@ Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
 
 ---
 
-## 📊 Monitoreo
-
-### Health Check
-
-```bash
-curl http://localhost:8080/actuator/health
-
-{
-  "status": "UP",
-  "components": {
-    "db": { "status": "UP" },
-    "diskSpace": { "status": "UP" }
-  }
-}
-```
-
-### Métricas
-
-```bash
-curl http://localhost:8080/actuator/metrics
-```
-
----
-
 ## 🤝 Uso de IA en el Proyecto
 
 Este proyecto fue desarrollado con asistencia de **GitHub Copilot** (Claude-based).
