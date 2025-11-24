@@ -9,6 +9,8 @@ import com.bank.bankingservice.openapi.model.PaymentOrderInitiationResponse;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
+import reactor.core.publisher.Mono;
+
 @Service
 @RequiredArgsConstructor
 public class CreatePaymentOrderUseCase {
@@ -16,11 +18,10 @@ public class CreatePaymentOrderUseCase {
     private final PaymentOrderRepository repository;
     private final PaymentOrderMapper mapper;
 
-    public PaymentOrderInitiationResponse execute(PaymentOrderInitiationRequest request) {
-
+    public Mono<PaymentOrderInitiationResponse> execute(PaymentOrderInitiationRequest request) {
         PaymentOrder domain = mapper.toDomain(request);
         domain.setStatus("INITIATED");
-        repository.save(domain);
-        return mapper.toInitiationResponse(domain);
+        return repository.save(domain)
+                .map(mapper::toInitiationResponse);
     }
 }

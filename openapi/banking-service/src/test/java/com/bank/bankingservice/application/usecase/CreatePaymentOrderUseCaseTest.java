@@ -13,6 +13,8 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+import reactor.core.publisher.Mono;
+
 import java.math.BigDecimal;
 import java.time.LocalDate;
 
@@ -68,11 +70,13 @@ class CreatePaymentOrderUseCaseTest {
         // Arrange
         when(paymentOrderMapper.toDomain(testRequest))
                 .thenReturn(testDomain);
+        when(paymentOrderRepository.save(any(PaymentOrder.class)))
+                .thenReturn(Mono.just(testDomain));
         when(paymentOrderMapper.toInitiationResponse(testDomain))
                 .thenReturn(testResponse);
 
         // Act
-        PaymentOrderInitiationResponse result = useCase.execute(testRequest);
+        PaymentOrderInitiationResponse result = useCase.execute(testRequest).block();
 
         // Assert
         assertNotNull(result);
@@ -87,11 +91,13 @@ class CreatePaymentOrderUseCaseTest {
         // Arrange
         when(paymentOrderMapper.toDomain(testRequest))
                 .thenReturn(testDomain);
+        when(paymentOrderRepository.save(any(PaymentOrder.class)))
+                .thenReturn(Mono.just(testDomain));
         when(paymentOrderMapper.toInitiationResponse(testDomain))
                 .thenReturn(testResponse);
 
         // Act
-        useCase.execute(testRequest);
+        useCase.execute(testRequest).block();
 
         // Assert
         verify(paymentOrderRepository).save(any(PaymentOrder.class));
@@ -103,27 +109,31 @@ class CreatePaymentOrderUseCaseTest {
         // Arrange
         when(paymentOrderMapper.toDomain(testRequest))
                 .thenReturn(testDomain);
+        when(paymentOrderRepository.save(any(PaymentOrder.class)))
+                .thenReturn(Mono.just(testDomain));
         when(paymentOrderMapper.toInitiationResponse(testDomain))
                 .thenReturn(testResponse);
 
         // Act
-        useCase.execute(testRequest);
+        useCase.execute(testRequest).block();
 
         // Assert
         verify(paymentOrderMapper).toDomain(testRequest);
     }
 
     @Test
-    @DisplayName("execute() should map domain model to response")
+    @DisplayName("execute() should map domain to response")
     void shouldMapDomainToResponse() {
         // Arrange
         when(paymentOrderMapper.toDomain(testRequest))
                 .thenReturn(testDomain);
+        when(paymentOrderRepository.save(any(PaymentOrder.class)))
+                .thenReturn(Mono.just(testDomain));
         when(paymentOrderMapper.toInitiationResponse(testDomain))
                 .thenReturn(testResponse);
 
         // Act
-        useCase.execute(testRequest);
+        useCase.execute(testRequest).block();
 
         // Assert
         verify(paymentOrderMapper).toInitiationResponse(testDomain);

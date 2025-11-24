@@ -13,6 +13,10 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
+import reactor.core.publisher.Mono;
+
+import java.math.BigDecimal;
+import java.time.LocalDate;
 import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -51,10 +55,10 @@ class GetPaymentOrderUseCaseTest {
     void shouldRetrievePaymentOrderById() {
         // Arrange
         when(paymentOrderRepository.findById("PO-GET-001"))
-                .thenReturn(Optional.of(testPaymentOrder));
+                .thenReturn(Mono.just(Optional.of(testPaymentOrder)));
 
         // Act
-        PaymentOrder result = useCase.execute("PO-GET-001");
+        PaymentOrder result = useCase.execute("PO-GET-001").block();
 
         // Assert
         assertNotNull(result);
@@ -67,11 +71,11 @@ class GetPaymentOrderUseCaseTest {
     void shouldThrowExceptionWhenOrderNotFound() {
         // Arrange
         when(paymentOrderRepository.findById("NONEXISTENT"))
-                .thenReturn(Optional.empty());
+                .thenReturn(Mono.just(Optional.empty()));
 
         // Act & Assert
         assertThrows(PaymentOrderNotFoundException.class,
-                () -> useCase.execute("NONEXISTENT"));
+                () -> useCase.execute("NONEXISTENT").block());
     }
 
     @Test
@@ -79,10 +83,10 @@ class GetPaymentOrderUseCaseTest {
     void shouldReturnAllPaymentOrderDetails() {
         // Arrange
         when(paymentOrderRepository.findById("PO-GET-001"))
-                .thenReturn(Optional.of(testPaymentOrder));
+                .thenReturn(Mono.just(Optional.of(testPaymentOrder)));
 
         // Act
-        PaymentOrder result = useCase.execute("PO-GET-001");
+        PaymentOrder result = useCase.execute("PO-GET-001").block();
 
         // Assert
         assertEquals("EXT-GET-001", result.getExternalId());
@@ -99,10 +103,10 @@ class GetPaymentOrderUseCaseTest {
     void shouldHandleValidIdFormat() {
         // Arrange
         when(paymentOrderRepository.findById("PO-GET-001"))
-                .thenReturn(Optional.of(testPaymentOrder));
+                .thenReturn(Mono.just(Optional.of(testPaymentOrder)));
 
         // Act
-        PaymentOrder result = useCase.execute("PO-GET-001");
+        PaymentOrder result = useCase.execute("PO-GET-001").block();
 
         // Assert
         assertNotNull(result);
@@ -114,10 +118,10 @@ class GetPaymentOrderUseCaseTest {
     void shouldPreserveInitiatedStatus() {
         // Arrange
         when(paymentOrderRepository.findById("PO-GET-001"))
-                .thenReturn(Optional.of(testPaymentOrder));
+                .thenReturn(Mono.just(Optional.of(testPaymentOrder)));
 
         // Act
-        PaymentOrder result = useCase.execute("PO-GET-001");
+        PaymentOrder result = useCase.execute("PO-GET-001").block();
 
         // Assert
         assertEquals("INITIATED", result.getStatus());
@@ -128,10 +132,10 @@ class GetPaymentOrderUseCaseTest {
     void shouldPreserveRequestedExecutionDate() {
         // Arrange
         when(paymentOrderRepository.findById("PO-GET-001"))
-                .thenReturn(Optional.of(testPaymentOrder));
+                .thenReturn(Mono.just(Optional.of(testPaymentOrder)));
 
         // Act
-        PaymentOrder result = useCase.execute("PO-GET-001");
+        PaymentOrder result = useCase.execute("PO-GET-001").block();
 
         // Assert
         assertEquals(LocalDate.of(2025, 12, 20), result.getRequestedExecutionDate());

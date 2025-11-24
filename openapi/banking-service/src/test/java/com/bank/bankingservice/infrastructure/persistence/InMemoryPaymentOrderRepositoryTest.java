@@ -6,6 +6,9 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
 import java.math.BigDecimal;
+import reactor.core.publisher.Mono;
+
+import java.math.BigDecimal;
 import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -33,7 +36,7 @@ class InMemoryPaymentOrderRepositoryTest {
                 .status("INITIATED")
                 .build();
 
-        PaymentOrder saved = repository.save(order);
+        PaymentOrder saved = repository.save(order).block();
 
         assertNotNull(saved);
         assertEquals("PO-001", saved.getId());
@@ -52,9 +55,9 @@ class InMemoryPaymentOrderRepositoryTest {
                 .currency("EUR")
                 .status("PENDING")
                 .build();
-        repository.save(order);
+        repository.save(order).block();
 
-        Optional<PaymentOrder> found = repository.findById("PO-002");
+        Optional<PaymentOrder> found = repository.findById("PO-002").block();
 
         assertTrue(found.isPresent());
         assertEquals("PO-002", found.get().getId());
@@ -63,7 +66,7 @@ class InMemoryPaymentOrderRepositoryTest {
     @Test
     @DisplayName("findById() should return empty Optional when order not exists")
     void shouldReturnEmptyWhenNotFound() {
-        Optional<PaymentOrder> found = repository.findById("NONEXISTENT");
+        Optional<PaymentOrder> found = repository.findById("NONEXISTENT").block();
 
         assertTrue(found.isEmpty());
     }
@@ -86,11 +89,11 @@ class InMemoryPaymentOrderRepositoryTest {
                 .status("PENDING")
                 .build();
 
-        repository.save(order1);
-        repository.save(order2);
+        repository.save(order1).block();
+        repository.save(order2).block();
 
-        Optional<PaymentOrder> found1 = repository.findById("PO-003");
-        Optional<PaymentOrder> found2 = repository.findById("PO-004");
+        Optional<PaymentOrder> found1 = repository.findById("PO-003").block();
+        Optional<PaymentOrder> found2 = repository.findById("PO-004").block();
 
         assertTrue(found1.isPresent());
         assertTrue(found2.isPresent());
@@ -110,10 +113,10 @@ class InMemoryPaymentOrderRepositoryTest {
                 .status("PENDING")
                 .build();
 
-        repository.save(order1);
-        repository.save(order2);
+        repository.save(order1).block();
+        repository.save(order2).block();
 
-        Optional<PaymentOrder> found = repository.findById("PO-005");
+        Optional<PaymentOrder> found = repository.findById("PO-005").block();
 
         assertTrue(found.isPresent());
         assertEquals("PENDING", found.get().getStatus());
@@ -131,10 +134,10 @@ class InMemoryPaymentOrderRepositoryTest {
                 .currency("EUR")
                 .status("INITIATED")
                 .build();
-        repository.save(original);
+        repository.save(original).block();
 
-        Optional<PaymentOrder> found1 = repository.findById("PO-006");
-        Optional<PaymentOrder> found2 = repository.findById("PO-006");
+        Optional<PaymentOrder> found1 = repository.findById("PO-006").block();
+        Optional<PaymentOrder> found2 = repository.findById("PO-006").block();
 
         assertTrue(found1.isPresent());
         assertTrue(found2.isPresent());
@@ -150,8 +153,8 @@ class InMemoryPaymentOrderRepositoryTest {
                 .status("INITIATED")
                 .build();
 
-        PaymentOrder saved1 = repository.save(order);
-        PaymentOrder saved2 = repository.save(order);
+        PaymentOrder saved1 = repository.save(order).block();
+        PaymentOrder saved2 = repository.save(order).block();
 
         assertNotNull(saved1);
         assertNotNull(saved2);

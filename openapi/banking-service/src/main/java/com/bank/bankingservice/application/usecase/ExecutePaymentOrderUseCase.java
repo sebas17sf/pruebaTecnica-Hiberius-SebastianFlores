@@ -5,6 +5,8 @@ import com.bank.bankingservice.domain.model.PaymentOrder;
 import com.bank.bankingservice.domain.repository.PaymentOrderRepository;
 import org.springframework.stereotype.Service;
 
+import reactor.core.publisher.Mono;
+
 import java.time.OffsetDateTime;
 
 @Service
@@ -16,21 +18,22 @@ public class ExecutePaymentOrderUseCase {
         this.paymentOrderRepository = paymentOrderRepository;
     }
 
-    public PaymentOrder execute(String paymentOrderId, String executionReference) {
-        PaymentOrder existing = paymentOrderRepository.findById(paymentOrderId)
-                .orElseThrow(() -> new PaymentOrderNotFoundException(
-                        "Payment order not found: " + paymentOrderId
-                ));
+    public Mono<PaymentOrder> execute(String paymentOrderId, String executionReference) {
+        return paymentOrderRepository.findById(paymentOrderId)
+                .flatMap(optional -> optional.map(Mono::just)
+                        .orElse(Mono.error(() -> new PaymentOrderNotFoundException(
+                                "Payment order not found: " + paymentOrderId
+                        ))))
+                .flatMap(existing -> {
+                    if ("PENDING".equals(existing.getStatus())) {
+                        PaymentOrder executed = existing.toBuilder()
+                                .status("EXECUTED")
+                                .lastUpdate(OffsetDateTime.now())
+                                .build();
 
-        if ("PENDING".equals(existing.getStatus())) {
-            PaymentOrder executed = existing.toBuilder()
-                    .status("EXECUTED")
-                    .lastUpdate(OffsetDateTime.now())
-                    .build();
-            
-            return paymentOrderRepository.save(executed);
-        }
-
-        return existing;
+                        return paymentOrderRepository.save(executed);
+                    }
+                    return Mono.just(existing);
+                });
     }
 }

@@ -10,6 +10,8 @@ import com.bank.bankingservice.openapi.model.PaymentOrderStatusResponse;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
+import reactor.core.publisher.Mono;
+
 import java.time.OffsetDateTime;
 
 @Service
@@ -19,23 +21,23 @@ public class GetPaymentOrderStatusUseCase {
     private final PaymentOrderRepository repository;
     private final LegacyPaymentSoapSimulator soap;
 
-    public PaymentOrderStatusResponse execute(String id) {
+    public Mono<PaymentOrderStatusResponse> execute(String id) {
+        return repository.findById(id)
+                .flatMap(optional -> optional.map(Mono::just)
+                        .orElse(Mono.error(() -> new PaymentOrderNotFoundException(id))))
+                .flatMap(domain -> {
+                    String legacyStatus = soap.nextStatus(domain.getStatus());
+                    String bianStatus = mapLegacyStatusToBian(legacyStatus);
 
-        var domain = repository.findById(id)
-                .orElseThrow(() -> new PaymentOrderNotFoundException(id));
+                    domain.setStatus(bianStatus);
+                    domain.setLastUpdate(OffsetDateTime.now());
 
-        String legacyStatus = soap.nextStatus(domain.getStatus());
-        String bianStatus = mapLegacyStatusToBian(legacyStatus);
-        
-        domain.setStatus(bianStatus);
-        domain.setLastUpdate(OffsetDateTime.now());
-
-        repository.save(domain);
-
-        return new PaymentOrderStatusResponse()
-                .paymentOrderId(domain.getId())
-                .status(PaymentOrderStatusResponse.StatusEnum.fromValue(bianStatus))
-                .lastUpdate(domain.getLastUpdate());
+                    return repository.save(domain)
+                            .map(saved -> new PaymentOrderStatusResponse()
+                                    .paymentOrderId(saved.getId())
+                                    .status(PaymentOrderStatusResponse.StatusEnum.fromValue(bianStatus))
+                                    .lastUpdate(saved.getLastUpdate()));
+                });
     }
 
    

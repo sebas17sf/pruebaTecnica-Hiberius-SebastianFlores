@@ -2,11 +2,13 @@ package com.bank.bankingservice.domain.repository;
 
 import com.bank.bankingservice.domain.model.PaymentOrder;
 
+import reactor.core.publisher.Mono;
+
 import java.util.Optional;
 
 public interface PaymentOrderRepository {
 
-    PaymentOrder save(PaymentOrder order);
+    Mono<PaymentOrder> save(PaymentOrder order);
 
-    Optional<PaymentOrder> findById(String id);
+    Mono<Optional<PaymentOrder>> findById(String id);
 }

@@ -14,6 +14,11 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.OffsetDateTime;
+import reactor.core.publisher.Mono;
+
+import java.math.BigDecimal;
+import java.time.LocalDate;
+import java.time.OffsetDateTime;
 import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -66,12 +71,12 @@ class UpdatePaymentOrderUseCaseTest {
                 .build();
         
         when(paymentOrderRepository.findById("PO-UPDATE-001"))
-                .thenReturn(Optional.of(existingOrder));
+                .thenReturn(Mono.just(Optional.of(existingOrder)));
         when(paymentOrderRepository.save(any(PaymentOrder.class)))
-                .thenReturn(updated);
+                .thenReturn(Mono.just(updated));
 
         // Act
-        PaymentOrder result = useCase.execute("PO-UPDATE-001", updateRequest);
+        PaymentOrder result = useCase.execute("PO-UPDATE-001", updateRequest).block();
 
         // Assert
         assertNotNull(result);
@@ -84,11 +89,11 @@ class UpdatePaymentOrderUseCaseTest {
     void shouldThrowExceptionWhenOrderNotFound() {
         // Arrange
         when(paymentOrderRepository.findById(anyString()))
-                .thenReturn(Optional.empty());
+                .thenReturn(Mono.just(Optional.empty()));
 
         // Act & Assert
         assertThrows(PaymentOrderNotFoundException.class,
-                () -> useCase.execute("NONEXISTENT", updateRequest));
+                () -> useCase.execute("NONEXISTENT", updateRequest).block());
     }
 
     @Test
@@ -100,12 +105,12 @@ class UpdatePaymentOrderUseCaseTest {
                 .build();
         
         when(paymentOrderRepository.findById("PO-UPDATE-001"))
-                .thenReturn(Optional.of(existingOrder));
+                .thenReturn(Mono.just(Optional.of(existingOrder)));
         when(paymentOrderRepository.save(any(PaymentOrder.class)))
-                .thenReturn(updated);
+                .thenReturn(Mono.just(updated));
 
         // Act
-        PaymentOrder result = useCase.execute("PO-UPDATE-001", updateRequest);
+        PaymentOrder result = useCase.execute("PO-UPDATE-001", updateRequest).block();
 
         // Assert
         assertEquals("PO-UPDATE-001", result.getId());
@@ -119,12 +124,12 @@ class UpdatePaymentOrderUseCaseTest {
     void shouldSaveUpdatedOrderToRepository() {
         // Arrange
         when(paymentOrderRepository.findById("PO-UPDATE-001"))
-                .thenReturn(Optional.of(existingOrder));
+                .thenReturn(Mono.just(Optional.of(existingOrder)));
         when(paymentOrderRepository.save(any(PaymentOrder.class)))
-                .thenReturn(existingOrder);
+                .thenReturn(Mono.just(existingOrder));
 
         // Act
-        useCase.execute("PO-UPDATE-001", updateRequest);
+        useCase.execute("PO-UPDATE-001", updateRequest).block();
 
         // Assert
         verify(paymentOrderRepository).save(any(PaymentOrder.class));
@@ -139,16 +144,16 @@ class UpdatePaymentOrderUseCaseTest {
                 .build();
         
         when(paymentOrderRepository.findById("PO-UPDATE-001"))
-                .thenReturn(Optional.of(existingOrder));
+                .thenReturn(Mono.just(Optional.of(existingOrder)));
         when(paymentOrderRepository.save(any(PaymentOrder.class)))
-                .thenReturn(updated);
+                .thenReturn(Mono.just(updated));
 
         PaymentOrder updateData = PaymentOrder.builder()
                 .remittanceInfo("New reference")
                 .build();
 
         // Act
-        PaymentOrder result = useCase.execute("PO-UPDATE-001", updateData);
+        PaymentOrder result = useCase.execute("PO-UPDATE-001", updateData).block();
 
         // Assert
         assertEquals("New reference", result.getRemittanceInfo());

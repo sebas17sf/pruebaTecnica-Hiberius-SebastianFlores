@@ -4,6 +4,8 @@ import com.bank.bankingservice.domain.model.PaymentOrder;
 import com.bank.bankingservice.domain.repository.PaymentOrderRepository;
 import org.springframework.stereotype.Repository;
 
+import reactor.core.publisher.Mono;
+
 import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
 
@@ -13,13 +15,15 @@ public class InMemoryPaymentOrderRepository implements PaymentOrderRepository {
     private final ConcurrentHashMap<String, PaymentOrder> db = new ConcurrentHashMap<>();
 
     @Override
-    public PaymentOrder save(PaymentOrder order) {
-        db.put(order.getId(), order);
-        return order;
+    public Mono<PaymentOrder> save(PaymentOrder order) {
+        return Mono.fromCallable(() -> {
+            db.put(order.getId(), order);
+            return order;
+        });
     }
 
     @Override
-    public Optional<PaymentOrder> findById(String id) {
-        return Optional.ofNullable(db.get(id));
+    public Mono<Optional<PaymentOrder>> findById(String id) {
+        return Mono.fromCallable(() -> Optional.ofNullable(db.get(id)));
     }
 }

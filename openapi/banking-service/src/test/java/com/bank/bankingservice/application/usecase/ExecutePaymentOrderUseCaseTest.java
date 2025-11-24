@@ -14,6 +14,11 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.OffsetDateTime;
+import reactor.core.publisher.Mono;
+
+import java.math.BigDecimal;
+import java.time.LocalDate;
+import java.time.OffsetDateTime;
 import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -57,11 +62,11 @@ class ExecutePaymentOrderUseCaseTest {
                 .build();
         
         when(paymentOrderRepository.findById("PO-EXEC-001"))
-                .thenReturn(Optional.of(pendingOrder));
+                .thenReturn(Mono.just(Optional.of(pendingOrder)));
         when(paymentOrderRepository.save(any(PaymentOrder.class)))
-                .thenReturn(executed);
+                .thenReturn(Mono.just(executed));
 
-        PaymentOrder result = useCase.execute("PO-EXEC-001", "EXEC-2025-0001");
+        PaymentOrder result = useCase.execute("PO-EXEC-001", "EXEC-2025-0001").block();
 
         assertNotNull(result);
         assertEquals("EXECUTED", result.getStatus());
@@ -71,10 +76,10 @@ class ExecutePaymentOrderUseCaseTest {
     @DisplayName("execute() should throw exception when order not found")
     void shouldThrowExceptionWhenOrderNotFound() {
         when(paymentOrderRepository.findById(anyString()))
-                .thenReturn(Optional.empty());
+                .thenReturn(Mono.just(Optional.empty()));
 
         assertThrows(PaymentOrderNotFoundException.class,
-                () -> useCase.execute("NONEXISTENT", "EXEC-001"));
+                () -> useCase.execute("NONEXISTENT", "EXEC-001").block());
     }
 
     @Test
@@ -86,12 +91,12 @@ class ExecutePaymentOrderUseCaseTest {
                 .build();
         
         when(paymentOrderRepository.findById("PO-EXEC-001"))
-                .thenReturn(Optional.of(pendingOrder));
+                .thenReturn(Mono.just(Optional.of(pendingOrder)));
         when(paymentOrderRepository.save(any(PaymentOrder.class)))
-                .thenReturn(executed);
+                .thenReturn(Mono.just(executed));
 
         // Act
-        PaymentOrder result = useCase.execute("PO-EXEC-001", "EXEC-2025-0001");
+        PaymentOrder result = useCase.execute("PO-EXEC-001", "EXEC-2025-0001").block();
 
         // Assert
         assertEquals("PO-EXEC-001", result.getId());
@@ -104,11 +109,11 @@ class ExecutePaymentOrderUseCaseTest {
     @DisplayName("execute() should save executed order to repository")
     void shouldSaveExecutedOrderToRepository() {
         when(paymentOrderRepository.findById("PO-EXEC-001"))
-                .thenReturn(Optional.of(pendingOrder));
+                .thenReturn(Mono.just(Optional.of(pendingOrder)));
         when(paymentOrderRepository.save(any(PaymentOrder.class)))
-                .thenReturn(pendingOrder);
+                .thenReturn(Mono.just(pendingOrder));
 
-        useCase.execute("PO-EXEC-001", "EXEC-2025-0001");
+        useCase.execute("PO-EXEC-001", "EXEC-2025-0001").block();
 
         verify(paymentOrderRepository).save(any(PaymentOrder.class));
     }
@@ -122,12 +127,12 @@ class ExecutePaymentOrderUseCaseTest {
                 .build();
         
         when(paymentOrderRepository.findById("PO-EXEC-001"))
-                .thenReturn(Optional.of(pendingOrder));
+                .thenReturn(Mono.just(Optional.of(pendingOrder)));
         when(paymentOrderRepository.save(any(PaymentOrder.class)))
-                .thenReturn(executed);
+                .thenReturn(Mono.just(executed));
 
         // Act
-        PaymentOrder result = useCase.execute("PO-EXEC-001", "EXEC-REF-123");
+        PaymentOrder result = useCase.execute("PO-EXEC-001", "EXEC-REF-123").block();
 
         // Assert
         assertNotNull(result);
@@ -145,12 +150,12 @@ class ExecutePaymentOrderUseCaseTest {
                 .build();
         
         when(paymentOrderRepository.findById("PO-EXEC-001"))
-                .thenReturn(Optional.of(pendingOrder));
+                .thenReturn(Mono.just(Optional.of(pendingOrder)));
         when(paymentOrderRepository.save(any(PaymentOrder.class)))
-                .thenReturn(executed);
+                .thenReturn(Mono.just(executed));
 
         // Act
-        PaymentOrder result = useCase.execute("PO-EXEC-001", "EXEC-001");
+        PaymentOrder result = useCase.execute("PO-EXEC-001", "EXEC-001").block();
 
         // Assert
         assertEquals("EXECUTED", result.getStatus());

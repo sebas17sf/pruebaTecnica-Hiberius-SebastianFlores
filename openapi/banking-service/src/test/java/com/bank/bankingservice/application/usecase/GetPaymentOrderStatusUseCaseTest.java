@@ -14,6 +14,11 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.OffsetDateTime;
+import reactor.core.publisher.Mono;
+
+import java.math.BigDecimal;
+import java.time.LocalDate;
+import java.time.OffsetDateTime;
 import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -49,11 +54,12 @@ class GetPaymentOrderStatusUseCaseTest {
                 .lastUpdate(OffsetDateTime.now())
                 .build();
 
-        when(repository.findById(paymentOrderId)).thenReturn(Optional.of(domain));
+        when(repository.findById(paymentOrderId)).thenReturn(Mono.just(Optional.of(domain)));
         when(soap.nextStatus("INITIATED")).thenReturn("PROCESSING");
+        when(repository.save(any(PaymentOrder.class))).thenReturn(Mono.just(domain));
 
         // Act
-        PaymentOrderStatusResponse response = useCase.execute(paymentOrderId);
+        PaymentOrderStatusResponse response = useCase.execute(paymentOrderId).block();
 
         // Assert
         assertNotNull(response);
@@ -76,11 +82,12 @@ class GetPaymentOrderStatusUseCaseTest {
                 .lastUpdate(OffsetDateTime.now())
                 .build();
 
-        when(repository.findById(paymentOrderId)).thenReturn(Optional.of(domain));
+        when(repository.findById(paymentOrderId)).thenReturn(Mono.just(Optional.of(domain)));
         when(soap.nextStatus("PENDING")).thenReturn("EXECUTED");
+        when(repository.save(any(PaymentOrder.class))).thenReturn(Mono.just(domain));
 
         // Act
-        PaymentOrderStatusResponse response = useCase.execute(paymentOrderId);
+        PaymentOrderStatusResponse response = useCase.execute(paymentOrderId).block();
 
         // Assert
         assertNotNull(response);
@@ -94,11 +101,11 @@ class GetPaymentOrderStatusUseCaseTest {
     void testExecute_PaymentOrderNotFound() {
         // Arrange
         String paymentOrderId = "PO-INVALID";
-        when(repository.findById(paymentOrderId)).thenReturn(Optional.empty());
+        when(repository.findById(paymentOrderId)).thenReturn(Mono.just(Optional.empty()));
 
         // Act & Assert
         assertThrows(PaymentOrderNotFoundException.class, () -> 
-            useCase.execute(paymentOrderId));
+            useCase.execute(paymentOrderId).block());
         
         verify(repository, times(1)).findById(paymentOrderId);
         verify(soap, never()).nextStatus(anyString());
@@ -115,11 +122,12 @@ class GetPaymentOrderStatusUseCaseTest {
                 .lastUpdate(originalTime)
                 .build();
 
-        when(repository.findById(paymentOrderId)).thenReturn(Optional.of(domain));
+        when(repository.findById(paymentOrderId)).thenReturn(Mono.just(Optional.of(domain)));
         when(soap.nextStatus("INITIATED")).thenReturn("PROCESSING");
+        when(repository.save(any(PaymentOrder.class))).thenReturn(Mono.just(domain));
 
         // Act
-        useCase.execute(paymentOrderId);
+        useCase.execute(paymentOrderId).block();
 
         // Assert
         verify(repository, times(1)).save(argThat(order -> 
